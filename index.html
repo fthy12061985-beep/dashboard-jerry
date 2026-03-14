@@ -24,21 +24,20 @@
 
     <div class="absolute top-0 w-full h-[127px] bg-[#00a884] -z-10 hidden md:block transition-all duration-500"></div>
 
-    <!-- MODAL TAMBAH KONTAK -->
+    <!-- ========================================== -->
+    <!-- MODAL TAMBAH KONTAK (VERSI BARU - EXPLORE) -->
+    <!-- ========================================== -->
     <div id="modal-kontak" class="hidden-view fixed inset-0 bg-black/50 z-50 flex items-center justify-center backdrop-blur-sm px-4">
-        <div class="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-sm animate-fade-scale">
-            <h2 class="text-xl font-bold text-slate-800 mb-1">Tambah Kontak</h2>
-            <p class="text-sm text-slate-500 mb-4">Cari teman berdasarkan Nama Profil mereka.</p>
+        <div class="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-sm animate-fade-scale flex flex-col max-h-[85vh]">
+            <h2 class="text-xl font-bold text-slate-800 mb-1">Tambah Teman</h2>
+            <p class="text-xs text-slate-500 mb-4">Daftar pengguna yang sudah mendaftar di aplikasi ini.</p>
             
-            <div class="flex flex-col gap-3">
-                <input type="text" id="input-cari-nama" class="bg-slate-50 border border-slate-200 px-4 py-3 rounded-xl outline-none focus:ring-2 focus:ring-[#00a884] w-full text-sm" placeholder="Nama Profil Teman">
-                <input type="text" id="input-nama-panggilan" class="bg-slate-50 border border-slate-200 px-4 py-3 rounded-xl outline-none focus:ring-2 focus:ring-[#00a884] w-full text-sm" placeholder="Nama Panggilan">
-                
-                <div class="flex gap-2 mt-2">
-                    <button onclick="tutupModalKontak()" class="flex-1 bg-slate-200 hover:bg-slate-300 text-slate-700 py-2.5 rounded-xl font-bold transition-all">Batal</button>
-                    <button onclick="prosesTambahKontak()" id="btn-simpan-kontak" class="flex-1 bg-[#00a884] hover:bg-[#008f6f] text-white py-2.5 rounded-xl font-bold transition-all shadow-md">Simpan</button>
-                </div>
+            <!-- Daftar Pengguna Global -->
+            <div id="daftar-pengguna-global" class="flex-1 overflow-y-auto border border-slate-100 rounded-xl p-2 flex flex-col gap-2 min-h-[250px] bg-slate-50 shadow-inner">
+                <p class="text-center text-sm text-slate-400 mt-4 animate-pulse">Mencari pengguna...</p>
             </div>
+            
+            <button onclick="tutupModalKontak()" class="w-full bg-slate-200 hover:bg-slate-300 text-slate-700 py-3 rounded-xl font-bold transition-all mt-4 shadow-sm active:scale-95">Tutup</button>
         </div>
     </div>
 
@@ -51,7 +50,7 @@
         </div>
         <form id="form-auth" class="flex flex-col gap-4">
             <input type="email" id="auth-email" class="bg-slate-50 border border-slate-200 px-4 py-3 rounded-xl outline-none focus:ring-2 focus:ring-[#00a884]" placeholder="Email" required>
-            <input type="password" id="auth-pass" class="bg-slate-50 border border-slate-200 px-4 py-3 rounded-xl outline-none focus:ring-2 focus:ring-[#00a884]" placeholder="Sandi" required minlength="6">
+            <input type="password" id="auth-pass" class="bg-slate-50 border border-slate-200 px-4 py-3 rounded-xl outline-none focus:ring-2 focus:ring-[#00a884]" placeholder="Sandi (Min 6)" required minlength="6">
             <div class="flex gap-2 mt-2">
                 <button type="button" id="btn-login" class="flex-1 bg-[#00a884] text-white py-3 rounded-xl font-bold hover:bg-[#008f6f]">Masuk</button>
                 <button type="button" id="btn-register" class="flex-1 bg-white border-2 border-[#00a884] text-[#00a884] py-3 rounded-xl font-bold hover:bg-emerald-50">Daftar</button>
@@ -66,7 +65,6 @@
         <p class="text-slate-500 text-sm mb-6">Sesuaikan nama dan foto profilmu.</p>
         
         <form id="form-profile" class="flex flex-col gap-5 items-center">
-            <!-- Upload Foto Profil -->
             <div class="relative group cursor-pointer" onclick="document.getElementById('input-pfp').click()">
                 <div class="w-32 h-32 rounded-full bg-slate-200 overflow-hidden border-4 border-white shadow-lg flex items-center justify-center">
                     <img id="preview-pfp" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Me" class="w-full h-full object-cover">
@@ -96,7 +94,7 @@
                     <span id="my-name" class="font-semibold text-slate-800 text-sm cursor-pointer" onclick="gantiTampilan('view-profile')">Nama Saya</span>
                 </div>
                 <div class="flex gap-2">
-                    <button onclick="bukaModalKontak()" class="hover:bg-slate-200 text-slate-600 p-2 rounded-full transition-all" title="Tambah Kontak">
+                    <button onclick="bukaModalKontak()" class="hover:bg-slate-200 text-slate-600 p-2 rounded-full transition-all" title="Tambah Kontak (Discover)">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
                     </button>
                     <button onclick="keluar()" class="hover:bg-red-100 text-red-500 p-2 rounded-full transition-all" title="Keluar">
@@ -190,7 +188,6 @@
         }
         cekSesi(); 
 
-        // LOGIN & DAFTAR
         document.getElementById('btn-login').addEventListener('click', async () => {
             const { error } = await supabase.auth.signInWithPassword({ email: document.getElementById('auth-email').value, password: document.getElementById('auth-pass').value });
             if (error) document.getElementById('auth-error').textContent = error.message; else cekSesi();
@@ -202,7 +199,6 @@
         });
         window.keluar = async function() { await supabase.auth.signOut(); window.location.reload(); }
 
-        // LOGIKA PROFIL
         const inputPfp = document.getElementById('input-pfp');
         const previewPfp = document.getElementById('preview-pfp');
         let fileFotoTerpilih = null;
@@ -240,46 +236,91 @@
             }
         });
 
-        // TAMBAH KONTAK
-        window.bukaModalKontak = function() {
+        // ==========================================
+        // PENCARIAN KONTAK (FITUR DISCOVER/EXPLORE)
+        // ==========================================
+        window.bukaModalKontak = async function() {
             document.getElementById('modal-kontak').classList.remove('hidden-view');
+            const wadah = document.getElementById('daftar-pengguna-global');
+            wadah.innerHTML = '<p class="text-center text-sm text-slate-400 mt-10 animate-pulse">Memuat daftar pengguna...</p>';
+
+            // Ambil SEMUA pengguna yang sudah terdaftar di aplikasi (Kecuali diri sendiri)
+            const { data: semuaUser, error } = await supabase.from('profil').select('*').neq('id', currentUser.id);
+
+            if (error || !semuaUser || semuaUser.length === 0) {
+                wadah.innerHTML = `
+                    <div class="flex flex-col items-center justify-center mt-6 text-center">
+                        <span class="text-4xl mb-2">😢</span>
+                        <p class="text-sm text-slate-500">Belum ada orang lain yang mendaftar di aplikasi ini selain kamu.<br><br>Coba buka tab penyamaran (Incognito), buat akun baru, lalu cek lagi di sini!</p>
+                    </div>`;
+                return;
+            }
+
+            wadah.innerHTML = ''; // Bersihkan loading
+            
+            // Loop dan tampilkan semua pengguna yang ada
+            semuaUser.forEach(user => {
+                const avatar = user.avatar_url || 'https://api.dicebear.com/7.x/avataaars/svg?seed='+user.nama;
+                const div = document.createElement('div');
+                div.className = 'flex items-center justify-between p-2 hover:bg-white rounded-lg border border-transparent hover:border-slate-200 transition-all shadow-sm';
+                div.innerHTML = `
+                    <div class="flex items-center gap-3 overflow-hidden">
+                        <img src="${avatar}" class="w-10 h-10 rounded-full object-cover shrink-0 border border-slate-200">
+                        <span class="text-sm font-semibold text-slate-700 truncate">${user.nama}</span>
+                    </div>
+                    <button onclick="prosesTambahTemanLangsung('${user.id}', '${user.nama}')" class="bg-[#00a884] hover:bg-[#008f6f] text-white text-xs px-4 py-2 rounded-full font-bold transition-all active:scale-95 shrink-0 shadow-md">Tambah</button>
+                `;
+                wadah.appendChild(div);
+            });
         }
+
         window.tutupModalKontak = function() { document.getElementById('modal-kontak').classList.add('hidden-view'); }
 
-        window.prosesTambahKontak = async function() {
-            const namaDicari = document.getElementById('input-cari-nama').value.trim();
-            const namaPanggilan = document.getElementById('input-nama-panggilan').value.trim() || namaDicari;
-            if(!namaDicari) return;
-
+        // Fungsi saat tombol "Tambah" di list ditekan
+        window.prosesTambahTemanLangsung = async function(temanId, namaTeman) {
             try {
-                const { data: teman, error: errCari } = await supabase.from('profil').select('id').eq('nama', namaDicari).single();
-                if (errCari || !teman) throw new Error("Teman tidak ditemukan!");
+                // 1. Cek apakah sudah ada di kontak
+                const { data: cekKontak } = await supabase.from('kontak').select('id').eq('pemilik_id', currentUser.id).eq('teman_id', temanId).single();
+                if(cekKontak) {
+                    alert(`${namaTeman} sudah ada di daftar kontakmu!`);
+                    return;
+                }
 
-                await supabase.from('kontak').insert({ pemilik_id: currentUser.id, teman_id: teman.id, nama_kontak: namaPanggilan });
+                // 2. Masukkan ke tabel kontak
+                await supabase.from('kontak').insert({ pemilik_id: currentUser.id, teman_id: temanId, nama_kontak: namaTeman });
 
+                // 3. Cek/Buat Ruang Chat
                 const { data: roomSaya } = await supabase.from('peserta_chat').select('ruang_id').eq('profil_id', currentUser.id);
-                // FIX: Gunakan (data || []) untuk mencegah error map pada data null
                 const idRoomSaya = (roomSaya || []).map(r => r.ruang_id);
                 
                 let ruangIdBersama = null;
                 if(idRoomSaya.length > 0) {
-                    const { data: roomBersama } = await supabase.from('peserta_chat').select('ruang_id').eq('profil_id', teman.id).in('ruang_id', idRoomSaya).limit(1);
+                    const { data: roomBersama } = await supabase.from('peserta_chat').select('ruang_id').eq('profil_id', temanId).in('ruang_id', idRoomSaya).limit(1);
                     if(roomBersama && roomBersama.length > 0) ruangIdBersama = roomBersama[0].ruang_id;
                 }
 
                 if (!ruangIdBersama) {
                     const { data: ruangBaru } = await supabase.from('ruang_chat').insert({ nama_ruang: 'Private', tipe: 'pribadi' }).select().single();
-                    await supabase.from('peserta_chat').insert([{ ruang_id: ruangBaru.id, profil_id: currentUser.id }, { ruang_id: ruangBaru.id, profil_id: teman.id }]);
+                    await supabase.from('peserta_chat').insert([{ ruang_id: ruangBaru.id, profil_id: currentUser.id }, { ruang_id: ruangBaru.id, profil_id: temanId }]);
                 }
+                
                 tutupModalKontak();
                 muatDaftarKontak();
-            } catch(e) { alert(e.message); }
+                
+            } catch(e) {
+                alert("Gagal menambahkan teman: " + e.message);
+            }
         }
 
         async function muatDaftarKontak() {
             const listEl = document.getElementById('chat-list');
             const { data: daftarKontak } = await supabase.from('kontak').select('*').eq('pemilik_id', currentUser.id).order('nama_kontak');
-            if (!daftarKontak || daftarKontak.length === 0) { listEl.innerHTML = '<p class="text-slate-400 text-center mt-10 text-sm">Belum ada kontak.</p>'; return; }
+            
+            if (!daftarKontak || daftarKontak.length === 0) { 
+                listEl.innerHTML = '<div class="flex flex-col items-center p-6 text-center"><div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-3">📇</div><p class="text-slate-500 text-sm">Buku kontak kosong.<br>Klik tombol (+) di atas untuk menambah teman!</p></div>'; 
+                return; 
+            }
+
             listEl.innerHTML = '';
             for (let kontak of daftarKontak) {
                 const { data: profTeman } = await supabase.from('profil').select('avatar_url').eq('id', kontak.teman_id).single();
@@ -287,7 +328,7 @@
                 const item = document.createElement('div');
                 item.className = 'flex items-center gap-3 p-3 hover:bg-[#f5f6f6] cursor-pointer border-b border-slate-50 transition-colors';
                 item.onclick = () => prosesBukaChat(kontak.teman_id, kontak.nama_kontak, avatar);
-                item.innerHTML = `<img src="${avatar}" class="w-12 h-12 rounded-full object-cover"><h3 class="text-slate-800 font-medium">${kontak.nama_kontak}</h3>`;
+                item.innerHTML = `<img src="${avatar}" class="w-12 h-12 rounded-full object-cover shadow-sm"><h3 class="text-slate-800 font-medium">${kontak.nama_kontak}</h3>`;
                 listEl.appendChild(item);
             }
         }
@@ -299,7 +340,6 @@
             if (window.innerWidth < 768) { document.getElementById('sidebar').classList.add('hidden'); document.getElementById('chat-area').classList.remove('hidden'); document.getElementById('chat-area').classList.add('flex'); }
 
             const { data: roomSaya } = await supabase.from('peserta_chat').select('ruang_id').eq('profil_id', currentUser.id);
-            // FIX: Gunakan (data || []) untuk mencegah error map pada data null
             const idRoomSaya = (roomSaya || []).map(r => r.ruang_id);
             
             if (idRoomSaya.length > 0) {
