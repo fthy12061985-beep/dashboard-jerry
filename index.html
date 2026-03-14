@@ -92,7 +92,6 @@
         <div id="sidebar" class="w-full md:w-[30%] lg:w-[25%] bg-white flex flex-col border-r border-slate-200 shrink-0 h-full z-20 absolute md:relative">
             <div class="bg-[#f0f2f5] p-3 flex items-center justify-between shadow-sm">
                 <div class="flex items-center gap-3">
-                    <!-- Ditambahkan onclick untuk kembali ke profil -->
                     <img id="my-avatar" src="" class="w-10 h-10 rounded-full object-cover cursor-pointer hover:opacity-80 transition-opacity" onclick="gantiTampilan('view-profile')">
                     <span id="my-name" class="font-semibold text-slate-800 text-sm cursor-pointer" onclick="gantiTampilan('view-profile')">Nama Saya</span>
                 </div>
@@ -203,7 +202,7 @@
         });
         window.keluar = async function() { await supabase.auth.signOut(); window.location.reload(); }
 
-        // LOGIKA PROFIL (Ganti Foto & Nama)
+        // LOGIKA PROFIL
         const inputPfp = document.getElementById('input-pfp');
         const previewPfp = document.getElementById('preview-pfp');
         let fileFotoTerpilih = null;
@@ -259,7 +258,9 @@
                 await supabase.from('kontak').insert({ pemilik_id: currentUser.id, teman_id: teman.id, nama_kontak: namaPanggilan });
 
                 const { data: roomSaya } = await supabase.from('peserta_chat').select('ruang_id').eq('profil_id', currentUser.id);
-                const idRoomSaya = roomSaya.map(r => r.ruang_id);
+                // FIX: Gunakan (data || []) untuk mencegah error map pada data null
+                const idRoomSaya = (roomSaya || []).map(r => r.ruang_id);
+                
                 let ruangIdBersama = null;
                 if(idRoomSaya.length > 0) {
                     const { data: roomBersama } = await supabase.from('peserta_chat').select('ruang_id').eq('profil_id', teman.id).in('ruang_id', idRoomSaya).limit(1);
@@ -298,17 +299,23 @@
             if (window.innerWidth < 768) { document.getElementById('sidebar').classList.add('hidden'); document.getElementById('chat-area').classList.remove('hidden'); document.getElementById('chat-area').classList.add('flex'); }
 
             const { data: roomSaya } = await supabase.from('peserta_chat').select('ruang_id').eq('profil_id', currentUser.id);
-            const idRoomSaya = roomSaya.map(r => r.ruang_id);
-            const { data: roomBersama } = await supabase.from('peserta_chat').select('ruang_id').eq('profil_id', temanId).in('ruang_id', idRoomSaya).limit(1);
-            activeChatId = roomBersama[0].ruang_id;
+            // FIX: Gunakan (data || []) untuk mencegah error map pada data null
+            const idRoomSaya = (roomSaya || []).map(r => r.ruang_id);
+            
+            if (idRoomSaya.length > 0) {
+                const { data: roomBersama } = await supabase.from('peserta_chat').select('ruang_id').eq('profil_id', temanId).in('ruang_id', idRoomSaya).limit(1);
+                if (roomBersama && roomBersama.length > 0) {
+                    activeChatId = roomBersama[0].ruang_id;
 
-            const { data: pesanLama } = await supabase.from('pesan_baru').select('*').eq('ruang_id', activeChatId).order('created_at', { ascending: true });
-            const kotakPesan = document.getElementById('kotak-pesan');
-            kotakPesan.innerHTML = '<div class="flex justify-center mb-4 mt-2"><div class="bg-[#ffeecd] text-slate-700 text-[11px] px-3 py-1.5 rounded-lg text-center shadow-sm">🔒 Pesan ini aman.</div></div>';
-            if (pesanLama) pesanLama.forEach(msg => gambarGelembungPesan(msg));
+                    const { data: pesanLama } = await supabase.from('pesan_baru').select('*').eq('ruang_id', activeChatId).order('created_at', { ascending: true });
+                    const kotakPesan = document.getElementById('kotak-pesan');
+                    kotakPesan.innerHTML = '<div class="flex justify-center mb-4 mt-2"><div class="bg-[#ffeecd] text-slate-700 text-[11px] px-3 py-1.5 rounded-lg text-center shadow-sm">🔒 Pesan ini aman.</div></div>';
+                    if (pesanLama) pesanLama.forEach(msg => gambarGelembungPesan(msg));
 
-            if (realtimeSubscription) supabase.removeChannel(realtimeSubscription); 
-            realtimeSubscription = supabase.channel(`ruang-${activeChatId}`).on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'pesan_baru', filter: `ruang_id=eq.${activeChatId}` }, payload => gambarGelembungPesan(payload.new)).subscribe();
+                    if (realtimeSubscription) supabase.removeChannel(realtimeSubscription); 
+                    realtimeSubscription = supabase.channel(`ruang-${activeChatId}`).on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'pesan_baru', filter: `ruang_id=eq.${activeChatId}` }, payload => gambarGelembungPesan(payload.new)).subscribe();
+                }
+            }
         }
 
         function gambarGelembungPesan(msg) {
@@ -316,8 +323,8 @@
             const waktu = new Date(msg.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
             const div = document.createElement('div');
             div.className = `flex w-full mb-1 animate-slide-up opacity-0 ${apakahSaya ? 'justify-end' : 'justify-start'}`;
-            if (apakahSaya) div.innerHTML = `<div class="bg-[#d9fdd3] text-slate-800 px-3 py-1.5 rounded-lg rounded-tr-none max-w-[85%] shadow-sm relative"><p class="text-[14.5px] leading-relaxed">${msg.isi_pesan}</p><span class="text-[10px] text-slate-500 ml-auto pt-1">${waktu}</span></div>`;
-            else div.innerHTML = `<div class="bg-white text-slate-800 px-3 py-1.5 rounded-lg rounded-tl-none shadow-sm relative"><p class="text-[14.5px] leading-relaxed">${msg.isi_pesan}</p><span class="text-[10px] text-slate-400 ml-auto pt-1">${waktu}</span></div>`;
+            if (apakahSaya) div.innerHTML = `<div class="bg-[#d9fdd3] text-slate-800 px-3 py-1.5 rounded-lg rounded-tr-none max-w-[85%] shadow-sm relative"><p class="text-[14.5px] leading-relaxed break-words">${msg.isi_pesan}</p><span class="text-[10px] text-slate-500 ml-auto pt-1">${waktu}</span></div>`;
+            else div.innerHTML = `<div class="bg-white text-slate-800 px-3 py-1.5 rounded-lg rounded-tl-none shadow-sm relative"><p class="text-[14.5px] leading-relaxed break-words">${msg.isi_pesan}</p><span class="text-[10px] text-slate-400 ml-auto pt-1">${waktu}</span></div>`;
             document.getElementById('kotak-pesan').appendChild(div);
             document.getElementById('kotak-pesan').scrollTop = document.getElementById('kotak-pesan').scrollHeight;
         }
