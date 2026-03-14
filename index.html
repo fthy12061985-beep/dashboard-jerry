@@ -279,15 +279,23 @@
         // Fungsi saat tombol "Tambah" di list ditekan
         window.prosesTambahTemanLangsung = async function(temanId, namaTeman) {
             try {
-                // 1. Cek apakah sudah ada di kontak
-                const { data: cekKontak } = await supabase.from('kontak').select('id').eq('pemilik_id', currentUser.id).eq('teman_id', temanId).single();
+                // 1. Cek apakah sudah ada di kontak menggunakan maybeSingle()
+                const { data: cekKontak, error: errCek } = await supabase.from('kontak')
+                    .select('id')
+                    .eq('pemilik_id', currentUser.id)
+                    .eq('teman_id', temanId)
+                    .maybeSingle(); // Ini kunci agar tidak error!
+
+                if(errCek) throw new Error("Gagal mengecek kontak: " + errCek.message);
+
                 if(cekKontak) {
                     alert(`${namaTeman} sudah ada di daftar kontakmu!`);
                     return;
                 }
 
                 // 2. Masukkan ke tabel kontak
-                await supabase.from('kontak').insert({ pemilik_id: currentUser.id, teman_id: temanId, nama_kontak: namaTeman });
+                const { error: errInsert } = await supabase.from('kontak').insert({ pemilik_id: currentUser.id, teman_id: temanId, nama_kontak: namaTeman });
+                if (errInsert) throw new Error("Gagal menyimpan kontak: " + errInsert.message);
 
                 // 3. Cek/Buat Ruang Chat
                 const { data: roomSaya } = await supabase.from('peserta_chat').select('ruang_id').eq('profil_id', currentUser.id);
@@ -300,22 +308,32 @@
                 }
 
                 if (!ruangIdBersama) {
-                    const { data: ruangBaru } = await supabase.from('ruang_chat').insert({ nama_ruang: 'Private', tipe: 'pribadi' }).select().single();
-                    await supabase.from('peserta_chat').insert([{ ruang_id: ruangBaru.id, profil_id: currentUser.id }, { ruang_id: ruangBaru.id, profil_id: temanId }]);
+                    const { data: ruangBaru, error: errRuang } = await supabase.from('ruang_chat').insert({ nama_ruang: 'Private', tipe: 'pribadi' }).select().single();
+                    if(errRuang) throw new Error("Gagal membuat ruang chat: " + errRuang.message);
+
+                    const { error: errPeserta } = await supabase.from('peserta_chat').insert([{ ruang_id: ruangBaru.id, profil_id: currentUser.id }, { ruang_id: ruangBaru.id, profil_id: temanId }]);
+                    if(errPeserta) throw new Error("Gagal mendaftarkan peserta chat: " + errPeserta.message);
                 }
                 
                 tutupModalKontak();
                 muatDaftarKontak();
                 
             } catch(e) {
-                alert("Gagal menambahkan teman: " + e.message);
+                alert("Gagal menambahkan teman: \n" + e.message);
             }
         }
 
         async function muatDaftarKontak() {
             const listEl = document.getElementById('chat-list');
-            const { data: daftarKontak } = await supabase.from('kontak').select('*').eq('pemilik_id', currentUser.id).order('nama_kontak');
+            listEl.innerHTML = '<p class="text-center text-slate-400 text-sm mt-10 animate-pulse">Memuat kontak...</p>';
             
+            const { data: daftarKontak, error: errLoad } = await supabase.from('kontak').select('*').eq('pemilik_id', currentUser.id).order('nama_kontak');
+            
+            if (errLoad) {
+                listEl.innerHTML = `<p class="text-center text-red-500 text-sm mt-10 px-4">Error memuat kontak: ${errLoad.message}</p>`;
+                return;
+            }
+
             if (!daftarKontak || daftarKontak.length === 0) { 
                 listEl.innerHTML = '<div class="flex flex-col items-center p-6 text-center"><div class="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mb-3">📇</div><p class="text-slate-500 text-sm">Buku kontak kosong.<br>Klik tombol (+) di atas untuk menambah teman!</p></div>'; 
                 return; 
